@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 
 # create URL from input info
 # assumes only one station and sensor per request
-def build_url(station='', sensor='', duration='D', sd='', ed=''):
+def build_url(station=None, sensor=None, duration=None, sd=None, ed=None):
 
   sensordf = pd.read_csv('sensorid.csv')
   sensordict = {}
@@ -17,12 +17,13 @@ def build_url(station='', sensor='', duration='D', sd='', ed=''):
     sensordict[sensordf.loc[i].Sensor] = sensordf.loc[i].Sensornum
   #builds dictionary between variable type and sensor number
 
-
-  station = input('Enter a station ID')
-  sensor = input('Enter sensor number or variable type(in CAPS)')
-  duration = input('Enter duration code(H-hourly, D-daily, M-monthly)')
-  sd = input('Enter start date (yyyy-mm-dd)')
-  ed = input('Enter end date (yyyy-mm-dd) ')
+  #if no parameters, ask for input
+  if station==None and sensor==None and duration==None and sd == None and ed==None:
+    station = input('Enter a station ID: ')
+    sensor = input('Enter sensor number or variable type(in CAPS): ')
+    duration = input('Enter duration code(H-hourly, D-daily, M-monthly): ')
+    sd = input('Enter start date (yyyy-mm-dd): ')
+    ed = input('Enter end date (yyyy-mm-dd): ')
   if sensor.isdigit() == False:
       sensor = int(sensordict[sensor])
   else:
@@ -55,63 +56,13 @@ def reformat_series(df):
     raise IndexError('Requested data does not exist')
   return df
 
-# def get_df(url, table = str(1)):
-#
-#
-#   # Create a handle, page, to handle the contents of the website
-#   page = requests.get(url)
-#   # Store the contents of the website under doc
-#   doc = lh.fromstring(page.content)
-#   # Parse data that are stored between <tr>..</tr> of HTML
-#   tr_elements = doc.xpath('//tr')
-#
-#
-#
-#   # Create empty list
-#   col = []
-#   i = 0
-#   # For each row, store each first element (header) and an empty list
-#   for t in tr_elements[0]:
-#     i += 1
-#     name = t.text_content()
-#     #print ('%d:"%s"' % (i, name))
-#     col.append((name, []))
-#
-#
-#   # Since out first row is the header, data is stored on the second row onwards
-#   for j in range(1, len(tr_elements)):
-#     # T is our j'th row
-#     T = tr_elements[j]
-#
-#     # If row is not of size second row, the //tr data is not from our table
-#     if len(T) != len(tr_elements[1]):
-#       break
-#
-#     # i is the index of our column
-#     i = 0
-#
-#     # Iterate through each element of the row
-#     for t in T.iterchildren():
-#       data = t.text_content()
-#       # Check if row is empty
-#       # if i > 0:
-#       #   # Convert any numerical value to float
-#       #   try:
-#       #     data = float(data)
-#       #   except:
-#       #     pass
-#
-#       # Append the data to the empty list of the i'th column
-#       col[i][1].append(data)
-#       # Increment i for the next column
-#       i += 1
-#
-#
-#   #create dataframe
-#   Dict = {title: column for (title, column) in col}
-#   df = pd.DataFrame(Dict)
-#   print(df)
-#   return df
+#gets data from a specific station and sensor type
+def sensor_data(station=None, sensor=None, duration=None, sd=None, ed=None):
+  url = build_url(station, sensor, duration, sd, ed)
+  df = pd.read_csv(url)
+  series = reformat_series(df)
+  print(series)
+  return series
 
 # scrapes and prints table from url
 def get_df(url, nodf):
@@ -121,16 +72,18 @@ def get_df(url, nodf):
   df = pd.read_html(str(table))
   print(df)
   # print(tabulate(df[0], headers='keys', tablefmt='psql'))
+  return df
 
 
-
-def sensor_stations(): #get stations for particular sensor
+def sensor_stations(sensor=None): #get stations for particular sensor
   #get dict
   sensordf = pd.read_csv('sensorid.csv')
   sensordict = {}
   for i in range(len(sensordf['Sensornum'])):
     sensordict[sensordf.loc[i].Sensor] = sensordf.loc[i].Sensornum
-  sensor = input('Enter sensor number or variable type(in CAPS)')
+  if sensor==None: #if no parameter, ask for input
+    sensor = input('Enter sensor number or variable type(in CAPS)')
+
   if sensor.isdigit() == False:
     sensor = int(sensordict[sensor])
   else:
@@ -138,16 +91,24 @@ def sensor_stations(): #get stations for particular sensor
   #get df from url
   url = 'http://cdec.water.ca.gov/dynamicapp/staSearch?sta=&sensor_chk=on&sensor='+str(sensor)+'&collect=NONE+SPECIFIED&dur=&active=&lon1=&lon2=&lat1=&lat2=&elev1=-5&elev2=99000&nearby=&basin=NONE+SPECIFIED&hydro=NONE+SPECIFIED&county=NONE+SPECIFIED&agency_num=160&display=sta'
   get_df(url, 0)
-  return
+  return get_df(url,0)
 
 
-def station_sensors(): #get sensor for particular station
-  station = input('Enter a station ID: ')
+def station_sensors(station=None): #get sensor for particular station
+  if station==None: #ask for input if no parameters
+    station = input('Enter a station ID: ')
   url = 'http://cdec.water.ca.gov/dynamicapp/staMeta?station_id='+station
   get_df(url, 1)
-  return
+  return get_df(url, 1)
 
 
+def save_csv(df, filename=None): #save results to csv
+  filename = input('Enter filename for saved csv, enter space to exit: ')
+  if filename == ' ':
+    return
+  else:
+    df.to_csv(filename + '.csv')
+    return
 
 
 print('Menu: ')
@@ -157,16 +118,14 @@ print('3 - Get all sensors types from station')
 option = input('Enter an option: ')
 
 if option == '1':
-  url = build_url()
-  df = pd.read_csv(url)
-  series = reformat_series(df)
-  print(series)
+  save_csv(sensor_data())
 elif option == '2':
   sensor_stations()
 elif option == '3':
   station_sensors()
 else:
   print('Please enter a valid option')
+
 
 
 
