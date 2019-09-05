@@ -103,29 +103,51 @@ def station_sensors(station=None): #get sensor for particular station
 
 
 def save_csv(df, filename=None): #save results to csv
-  filename = input('Enter filename for saved csv, enter space to exit: ')
-  if filename == ' ':
-    return
+  if filename ==None:
+    filename = input('Enter filename for saved csv, press enter to exit: ')
+    if filename == '':
+      pass
+    else:
+      df.to_csv(filename + '.csv')
   else:
     df.to_csv(filename + '.csv')
     return
 
 
-print('Menu: ')
-print('1 - Get data from station')
-print('2 - Get all stations with sensor type')
-print('3 - Get all sensors types from station')
-option = input('Enter an option: ')
+def join_df(df1, df2): #function to merge two dataframes based on datetime
+  new_df = pd.merge(df1, df2, on='datetime')
+  return new_df
 
-if option == '1':
-  save_csv(sensor_data())
-elif option == '2':
-  sensor_stations()
-elif option == '3':
-  station_sensors()
-else:
-  print('Please enter a valid option')
 
+
+def menu():
+
+  print('Menu: ')
+  print('1 - Get data from station')
+  print('2 - Get all stations with sensor type')
+  print('3 - Get all sensors types from station')
+  option = input('Enter an option: ')
+
+  if option == '1':
+    save_csv(sensor_data())
+  elif option == '2':
+    sensor_stations()
+  elif option == '3':
+    station_sensors()
+  else:
+    print('Please enter a valid option')
+
+
+menu()
+
+#SAMPLE CODE: get single df with daily inflow(76) , storage (15), and outflow (23)
+# initial_df = sensor_data('SHA', sensor= '76', duration='D', sd='', ed='') #df with inflow
+# add_sensors = ['15', '23'] #add storage and outflow data
+# for i in add_sensors:
+#   df = sensor_data('SHA', sensor= i, duration='D', sd='', ed='')
+#   initial_df = join_df(initial_df, df) #combine df
+#
+# initial_df.to_csv('df.csv')
 
 
 
